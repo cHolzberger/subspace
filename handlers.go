@@ -366,30 +366,7 @@ func profileAddHandler(w *Web) {
 	}
 
 	script := `
-cd {{$.Datadir}}/wireguard
-wg_private_key="$(wg genkey)"
-wg_public_key="$(echo $wg_private_key | wg pubkey)"
-
-wg set wg0 peer ${wg_public_key} allowed-ips 10.99.97.{{$.Profile.Number}}/32,fd00::10:97:{{$.Profile.Number}}/128
-
-cat <<WGPEER >peers/{{$.Profile.ID}}.conf
-[Peer]
-PublicKey = ${wg_public_key}
-AllowedIPs = 10.99.97.{{$.Profile.Number}}/32,fd00::10:97:{{$.Profile.Number}}/128
-
-WGPEER
-
-    cat <<WGCLIENT >clients/{{$.Profile.ID}}.conf
-[Interface]
-PrivateKey = ${wg_private_key}
-DNS = 10.99.97.1, fd00::10:97:1
-Address = 10.99.97.{{$.Profile.Number}}/22,fd00::10:97:{{$.Profile.Number}}/112
-
-[Peer]
-PublicKey = $(cat server.public)
-Endpoint = {{$.Domain}}:51820
-AllowedIPs = 0.0.0.0/0, ::/0
-WGCLIENT
+/usr/local/bin/addprofile.sh {{$.Datadir}} {{$.Profile.ID}} {{$.Profile.Number}} {{$.Domain}}
 `
 	_, err = bash(script, struct {
 		Datadir string
@@ -537,12 +514,7 @@ func helpHandler(w *Web) {
 //
 func deleteProfile(profile Profile) error {
 	script := `
-# WireGuard
-cd {{$.Datadir}}/wireguard
-peerid=$(cat peers/{{$.Profile.ID}}.conf | perl -ne 'print $1 if /PublicKey\s*=\s*(.*)/')
-wg set wg0 peer $peerid remove
-rm peers/{{$.Profile.ID}}.conf
-rm clients/{{$.Profile.ID}}.conf
+/usr/local/bin/deleteprofile.sh {{$.Datadir}} {{.Profile.ID}} 
 `
 	output, err := bash(script, struct {
 		Datadir string
